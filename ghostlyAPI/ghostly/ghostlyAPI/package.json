@@ -5,7 +5,9 @@
   "author": "ghostly <danieltlevy@gmail.com>",
   "main": "functions/__main__.js",
   "dependencies": {
-    "mongodb": "^2.2.33"
+    "azure-storage": "^2.7.0",
+    "mongodb": "^2.2.34",
+    "uniqid": "^4.1.1"
   },
   "private": true,
   "stdlib": {

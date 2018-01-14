@@ -1,3 +1,4 @@
+const request = require('request');
 var ipAddress = 'localhost';
 var port = '3000';
 
@@ -7,6 +8,7 @@ const LONGITUDE = -123.120738;
 var dummyClipLocations = [
     {
         id: 0,
+        url: "https://cs4913bc9b0d99dx4c21x8ba.blob.core.windows.net/ghostly/sample.aac",
         location: {
             latitude: 49.261079,
             longitude: -123.248339,
@@ -14,6 +16,7 @@ var dummyClipLocations = [
     },
     {
         id: 1,
+        url: "https://cs4913bc9b0d99dx4c21x8ba.blob.core.windows.net/ghostly/sample.aac",
         location: {
             latitude: 49.261079,
             longitude: -123.247339,
@@ -21,6 +24,7 @@ var dummyClipLocations = [
     },
     {
         id: 2,
+        url: "https://cs4913bc9b0d99dx4c21x8ba.blob.core.windows.net/ghostly/sample.aac",
         location: {
             latitude: 49.261079,
             longitude: -123.246339,
