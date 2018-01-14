@@ -4,6 +4,7 @@ let cache = null;
 
 /**
 * Post clip to map, return clipId
+
 * @param {number} lat
 * @param {number} lon
 * @returns {string} 
@@ -21,8 +22,8 @@ module.exports = (lat, lon, context, callback) => {
     } else {
       // Container exists and allows anonymous read access to blob content and metadata within this container
       console.log("Container exists and allows anonymous read access to blob content and metadata within this container");
-      var testData = "test";
-      blobSvc.createBlockBlobFromText('ghostly', urlUnique, testData, function(error, result, response){
+      var testData = "/Users/bernhardt1/Music/ghostly_inception.wav";
+      blobSvc.createBlockBlobFromLocalFile('ghostly', urlUnique, testData, function(error, result, response){
         if(error){
           console.log(error);
           callback(null, "complete");
@@ -75,7 +76,7 @@ const createAudio = (db, audio, callback) => {
       console.log(error);
       return callback(null, error);
     }
-    return callback(null, result.insertedId);
+    return callback(null, result.insertedId.toString());
   });
 };
 
