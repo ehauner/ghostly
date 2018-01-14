@@ -123,9 +123,22 @@ class Map extends Component {
   }
 
   refreshClips() {
+    console.log("GETTING CLIPS")
     this.setState({
       clips: getClipLocations()
     });
+
+    let url = "https://cs4913bc9b0d99dx4c21x8ba.blob.core.windows.net/ghostly/sample.aac" 
+
+    const track = new Sound(url, null, (e) => {
+      if (e) {
+        console.log('error loading track:', e)
+      } else {
+        console.log("PLAYING TRACK")
+        track.play()
+      }
+    })
+   // getClip();
   }
 
   onRegionChange(region) {
