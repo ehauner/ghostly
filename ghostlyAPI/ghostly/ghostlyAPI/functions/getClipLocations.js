@@ -56,7 +56,10 @@ const readAudio = (lat, lon, db, callback) => {
         audios.push({
           id: item._id,
           url: item.url,
-          completed: item.loc
+          location: {
+          	latitude: item.loc.coordinates[0],
+          	longitude: item.loc.coordinates[1]
+          }
         });
     });
 };
