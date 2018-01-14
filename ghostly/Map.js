@@ -10,9 +10,14 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  Platform,
 } from 'react-native';
 import MapView from 'react-native-maps';
 import { getClipLocations, addClip, getClip } from './Api.js';
+
+import Sound from 'react-native-sound';
+import {AudioRecorder, AudioUtils} from 'react-native-audio';
+let audioPath = AudioUtils.DocumentDirectoryPath + '/test.aac';
 
 var { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
@@ -38,7 +43,20 @@ class Map extends Component {
       region: INITIAL_REGION,
       userPosition: null,
       clips: null,
+      currentTime: 0.0,
+      recording: false,
+      audioPath: AudioUtils.DocumentDirectoryPath + '/test.aac',
     }
+  }
+
+  prepareRecordingPath(audioPath){
+    AudioRecorder.prepareRecordingAtPath(audioPath, {
+      SampleRate: 22050,
+      Channels: 1,
+      AudioQuality: "Low",
+      AudioEncoding: "aac",
+      AudioEncodingBitRate: 32000
+    });
   }
 
   componentWillMount() {
@@ -47,6 +65,11 @@ class Map extends Component {
 
   // Center on the user's current position
   componentDidMount() {
+    this.prepareRecordingPath(this.state.audioPath);
+    AudioRecorder.onProgress = (data) => {
+      this.setState({currentTime: Math.floor(data.currentTime)});
+    };
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         console.log(position.coords);
@@ -97,6 +120,59 @@ class Map extends Component {
     this.setState({region});
   }
 
+  async record() {
+    this.setState({recording: true});
+    try {
+      const filePath = await AudioRecorder.startRecording();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async stopRecording() {
+    this.setState({recording: false});
+    try {
+      const filePath = await AudioRecorder.stopRecording();
+      if (Platform.OS === 'android') {
+        this._finishRecording(true, filePath);
+      }
+      return filePath;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  _finishRecording(didSucceed, filePath) {
+    this.setState({ finished: didSucceed });
+    console.log(`Finished recording of duration ${this.state.currentTime} seconds at path: ${filePath}`);
+  }
+
+  async playRecording() {
+    if (this.state.recording) {
+      await this.stopRecording();
+    }
+
+    // These timeouts are a hacky workaround for some issues with react-native-sound.
+    // See https://github.com/zmxv/react-native-sound/issues/89.
+    setTimeout(() => {
+      var sound = new Sound(this.state.audioPath, '', (error) => {
+        if (error) {
+          console.log('failed to load the sound', error);
+        }
+      });
+
+      setTimeout(() => {
+        sound.play((success) => {
+          if (success) {
+            console.log('successfully finished playing');
+          } else {
+            console.log('playback failed due to audio decoding errors');
+          }
+        });
+      }, 100);
+    }, 100);
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -131,12 +207,12 @@ class Map extends Component {
             />
           </TouchableHighlight>
 
-          <TouchableHighlight onPress={() => this.refreshClips()}
-            style={styles.recordButton}
-            underlayColor={'#66a3ff'}
+          <TouchableOpacity onPress={() => (this.state.recording ? this.stopRecording() : this.record())}
+            style={this.state.recording ? styles.recordButtonRecording : styles.recordButton }
+            activeOpacity={.8}
           >
             <View style={styles.recordIcon}></View>
-          </TouchableHighlight>
+          </TouchableOpacity>
 
           <TouchableHighlight onPress={() => this.refreshClips()}
             style={styles.button}
@@ -148,7 +224,18 @@ class Map extends Component {
             />
           </TouchableHighlight>
 
+          <TouchableHighlight onPress={() => this.playRecording()}
+            style={styles.button}
+            underlayColor={'#66a3ff'}
+          >
+            <Image
+              style={styles.buttonIcon}
+              source={require('./images/play.png')}
+            />
+          </TouchableHighlight>
+
         </View>
+        <Text style={styles.progressText}>{this.state.currentTime}s</Text>
 
       </View>
     );
@@ -192,6 +279,14 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 60,
     backgroundColor: '#3385ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recordButtonRecording: {
+    width: 60,
+    height: 60,
+    borderRadius: 60,
+    backgroundColor: 'red',
     alignItems: 'center',
     justifyContent: 'center',
   },
