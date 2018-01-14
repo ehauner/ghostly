@@ -17,6 +17,7 @@ import { getClipLocations, addClip, getClip } from './Api.js';
 
 import Sound from 'react-native-sound';
 import {AudioRecorder, AudioUtils} from 'react-native-audio';
+
 let audioPath = AudioUtils.DocumentDirectoryPath + '/test.aac';
 
 var { width, height } = Dimensions.get('window');
@@ -27,7 +28,6 @@ const LATITUDE = 49.282729;
 const LONGITUDE = -123.120738;
 const LATITUDE_DELTA = 0.01;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-var timer;
 
 const INITIAL_REGION = {
   latitude: LATITUDE,
@@ -44,9 +44,11 @@ class Map extends Component {
       userPosition: null,
       clips: null,
       currentTime: 0.0,
+      duration: 0.0,
       recording: false,
       audioPath: AudioUtils.DocumentDirectoryPath + '/test.aac',
     }
+    this.timer = null;
   }
 
   prepareRecordingPath(audioPath){
@@ -67,7 +69,17 @@ class Map extends Component {
   componentDidMount() {
     this.prepareRecordingPath(this.state.audioPath);
     AudioRecorder.onProgress = (data) => {
-      this.setState({currentTime: Math.floor(data.currentTime)});
+      if (data >= 10) this.stopRecording();
+      else this.setState({
+        currentTime: Math.round(data.currentTime * 100) / 100,
+        duration: Math.round(data.currentTime * 100) / 100
+      });
+    };
+    AudioRecorder.onFinished = (data) => {
+      // Android callback comes in the form of a promise instead.
+      if (Platform.OS === 'ios') {
+        this._finishRecording(data.status === "OK", data.audioFileURL);
+      }
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -121,6 +133,7 @@ class Map extends Component {
   }
 
   async record() {
+    clearInterval(this.timer);
     this.setState({recording: true});
     try {
       const filePath = await AudioRecorder.startRecording();
@@ -130,9 +143,27 @@ class Map extends Component {
   }
 
   async stopRecording() {
-    this.setState({recording: false});
+    this.setState({
+      recording: false,
+      currentTime: 0.0
+    });
     try {
       const filePath = await AudioRecorder.stopRecording();
+      Alert.alert(
+        'Share your clip?',
+        'Everybody will be able to hear it',
+        [
+          {text: 'Cancel', onPress: () => clearInterval(this.timer)},
+          {text: 'Share', onPress: () => {
+            clearInterval(this.timer);
+            addClip(this.state.userPosition, filePath)
+          }},
+        ],
+        { 
+          cancelable: false,
+          onDismiss: () => clearInterval(this.timer)
+        }
+      );
       if (Platform.OS === 'android') {
         this._finishRecording(true, filePath);
       }
@@ -144,7 +175,10 @@ class Map extends Component {
 
   _finishRecording(didSucceed, filePath) {
     this.setState({ finished: didSucceed });
-    console.log(`Finished recording of duration ${this.state.currentTime} seconds at path: ${filePath}`);
+    this.playRecording();
+    this.timer = setInterval(() => {
+      this.playRecording();
+    }, this.state.duration + 2000);
   }
 
   async playRecording() {
@@ -207,12 +241,18 @@ class Map extends Component {
             />
           </TouchableHighlight>
 
-          <TouchableOpacity onPress={() => (this.state.recording ? this.stopRecording() : this.record())}
-            style={this.state.recording ? styles.recordButtonRecording : styles.recordButton }
-            activeOpacity={.8}
+          <TouchableHighlight onPressIn={() => this.record()} onPressOut={() => this.stopRecording()}
+            style={styles.recordButton}
+            underlayColor={'red'}
           >
-            <View style={styles.recordIcon}></View>
-          </TouchableOpacity>
+            <View style={{
+              width: 20 + this.state.currentTime * 4,
+              height: 20 + this.state.currentTime * 4,
+              backgroundColor: 'white',
+              borderRadius: 60,
+              }}>
+            </View>
+          </TouchableHighlight>
 
           <TouchableHighlight onPress={() => this.refreshClips()}
             style={styles.button}
@@ -224,19 +264,7 @@ class Map extends Component {
             />
           </TouchableHighlight>
 
-          <TouchableHighlight onPress={() => this.playRecording()}
-            style={styles.button}
-            underlayColor={'#66a3ff'}
-          >
-            <Image
-              style={styles.buttonIcon}
-              source={require('./images/play.png')}
-            />
-          </TouchableHighlight>
-
         </View>
-        <Text style={styles.progressText}>{this.state.currentTime}s</Text>
-
       </View>
     );
   }
@@ -279,14 +307,6 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 60,
     backgroundColor: '#3385ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recordButtonRecording: {
-    width: 60,
-    height: 60,
-    borderRadius: 60,
-    backgroundColor: 'red',
     alignItems: 'center',
     justifyContent: 'center',
   },
