@@ -4,9 +4,11 @@ let cache = null;
 
 /**
 * Post clip to map, return clipId
+* @param {number} lat
+* @param {number} lon
 * @returns {string} 
 */
-module.exports = (context, callback) => {
+module.exports = (lat, lon, context, callback) => {
   var azure = require('azure-storage');
   var uniqid = require('uniqid');
   var urlUnique = uniqid();
@@ -31,8 +33,8 @@ module.exports = (context, callback) => {
           // add to other database
           var url = "https://cs4913bc9b0d99dx4c21x8ba.blob.core.windows.net/ghostly/";
           url += urlUnique;
-          let lat = context.params.lat || '';
-          let lon = context.params.lon || '';
+          let lat = context.params.lat || 0;
+          let lon = context.params.lon || 0;
           let audio = {
             url: url,
             loc: {
