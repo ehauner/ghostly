@@ -1,5 +1,4 @@
 const request = require('request');
-
 var ipAddress = 'localhost';
 var port = '3000';
 
@@ -38,10 +37,7 @@ var dummyClip;
 // Gets stuff to put on the map:
 // getClipIds({lat, lon}) returns [clipId, {lat, lon}]
 export function getClipLocations(location) {
-    request('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', { json: true }, (err, res, body) => {
-        if (err) { return console.log(err); }
-        console.log(res);
-        console.log(body);});
+    return dummyClipLocations;
 }
 
 // Post clip to map:
