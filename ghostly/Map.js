@@ -20,6 +20,7 @@ import {AudioRecorder, AudioUtils} from 'react-native-audio';
 
 let audioPath = AudioUtils.DocumentDirectoryPath + '/test.aac';
 
+var geodist = require('geodist')
 var { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
 
@@ -65,6 +66,11 @@ class Map extends Component {
     this.refreshClips();
   }
 
+  getDistArr(position) {
+    return this.state.clips.map(x => { return geodist({lat: position.coords.latitude, lon: position.coords.latitude},
+      {lat: x.location.latitude, lon: x.location.longitude})});
+  }
+
   // Center on the user's current position
   componentDidMount() {
     this.prepareRecordingPath(this.state.audioPath);
@@ -89,9 +95,13 @@ class Map extends Component {
           {userPosition: position.coords},
           () => this.centerOnUser(),
         );
+        console.log(this.state.clips);
+        var dists = this.getDistArr(position);
+        console.log(dists);
       },
-      (error) => alert(JSON.stringify(error)),
-      {enableHighAccuracy: true, timeout: 20000, maximumAge: 1000}
+      //(error) => alert(JSON.stringify(error)),
+      (error) => alert("Error getting initial position."),
+      //{enableHighAccuracy: true, timeout: 20000, maximumAge: 1000}
     );
     this.watchID = navigator.geolocation.watchPosition(
       (position) => {
@@ -99,9 +109,13 @@ class Map extends Component {
           {userPosition: position.coords},
           () => this.centerOnUser(),
         );
+        var dists = this.getDistArr(position);
+       console.log(dists);
       },
-      (error) => alert(JSON.stringify(error)),
-      {enableHighAccuracy: true, timeout: 20000, maximumAge: 1000}
+      
+      //(error) => alert(JSON.stringify(error)),
+      (error) => alert("Error updating position."),
+//      {enableHighAccuracy: true, timeout: 20000, maximumAge: 1000}
     );
   }
 
